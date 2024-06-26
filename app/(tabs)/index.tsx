@@ -1,70 +1,131 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import {
+	Image,
+	StyleSheet,
+	SafeAreaView,
+	ScrollView,
+	View,
+	Button,
+	useColorScheme,
+} from "react-native";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { SearchBar } from "react-native-elements";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { Colors } from "@/constants/Colors";
+import { useState } from "react";
+
+const chats = [
+	{ id: 1, name: "Chat 1", image: "https://picsum.photos/200/300" },
+	{ id: 2, name: "Chat 2", image: "https://picsum.photos/200/300" },
+	{ id: 3, name: "Chat 3", image: "https://picsum.photos/200/300" },
+	{ id: 4, name: "Chat 4", image: "https://picsum.photos/200/300" },
+	{ id: 5, name: "Chat 5", image: "https://picsum.photos/200/300" },
+	{ id: 6, name: "Chat 6", image: "https://picsum.photos/200/300" },
+	{ id: 7, name: "Chat 7", image: "https://picsum.photos/200/300" },
+	{ id: 8, name: "Chat 8", image: "https://picsum.photos/200/300" },
+	{ id: 9, name: "Chat 9", image: "https://picsum.photos/200/300" },
+	{ id: 10, name: "Chat 10", image: "https://picsum.photos/200/300" },
+];
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+	const border =
+		useColorScheme() === "light" ? Colors.light.border : Colors.dark.border;
+
+	const handleSearch = () => {
+		// filter chats when search term
+	};
+
+	const handleClearSearch = () => {
+		// clear search term
+	};
+
+	const handleFocus = () => {
+		// handle search bar focus
+	};
+
+	const handleBlur = () => {
+		// handle search bar blur
+	};
+
+	const searchBgColor =
+		useColorScheme() === "light"
+			? Colors.light.secondaryColor
+			: Colors.dark.secondaryColor;
+	const textColor =
+		useColorScheme() === "light" ? Colors.light.text : Colors.dark.text;
+
+	const searchIconColor =
+		useColorScheme() === "light" ? Colors.light.icon : Colors.dark.icon;
+
+	const [search, setSearch] = useState("");
+
+	return (
+		<SafeAreaView style={{ flex: 1 }}>
+			<View style={styles.titleContainer}>
+				<ThemedText type="title">Chats</ThemedText>
+			</View>
+			<SearchBar
+				platform="ios"
+				placeholder="Type Here..."
+				onChangeText={handleSearch}
+				value={search}
+				containerStyle={{ backgroundColor: "transparent" }}
+				inputContainerStyle={{ backgroundColor: searchBgColor }}
+				inputStyle={{ color: textColor }}
+				placeholderTextColor={searchIconColor}
+				searchIcon={{ name: "search" }}
+				clearIcon={{ name: "close" }}
+				onChange={() => setSearch}
+				onFocus={handleFocus}
+				onBlur={handleBlur}
+				onClear={handleClearSearch}
+				loadingProps={{
+					color: searchIconColor,
+				}}
+				showLoading={false}
+				onCancel={() => {}}
+				lightTheme={false}
+				round={false}
+				cancelButtonTitle={"Cancel"}
+				cancelButtonProps={{ color: searchIconColor }}
+				showCancel
+			/>
+			<ScrollView style={{ marginTop: 10 }}>
+				{chats.map((chat) => (
+					<View
+						style={[styles.chatContainer, { borderBottomColor: border }]}
+						key={chat.id}
+					>
+						<View
+							style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
+						>
+							<Image
+								style={{ width: 50, height: 50, borderRadius: 25 }}
+								source={{ uri: chat.image }}
+							/>
+							<ThemedText type="defaultSemiBold">{chat.name}</ThemedText>
+						</View>
+						<Button title="..." onPress={() => {}} />
+					</View>
+				))}
+			</ScrollView>
+		</SafeAreaView>
+	);
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+	titleContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginVertical: 10,
+		paddingHorizontal: 10,
+	},
+	chatContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		padding: 10,
+
+		borderBottomWidth: 0.5,
+	},
 });
