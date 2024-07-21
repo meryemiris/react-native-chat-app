@@ -1,20 +1,28 @@
+import React, { useState } from "react";
 import {
 	Image,
 	StyleSheet,
 	SafeAreaView,
 	ScrollView,
 	View,
-	Button,
 	useColorScheme,
+	Animated,
+	TouchableWithoutFeedback,
 } from "react-native";
-
 import { SearchBar } from "react-native-elements";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
-import { useState } from "react";
+import Swipeable from "react-native-gesture-handler/Swipeable";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { TouchableOpacity } from "react-native-gesture-handler";
 
-const chats = [
+interface Chat {
+	id: number;
+	name: string;
+	image: string;
+}
+
+const chats: Chat[] = [
 	{ id: 1, name: "Chat 1", image: "https://picsum.photos/200/300" },
 	{ id: 2, name: "Chat 2", image: "https://picsum.photos/200/300" },
 	{ id: 3, name: "Chat 3", image: "https://picsum.photos/200/300" },
@@ -31,12 +39,15 @@ export default function HomeScreen() {
 	const border =
 		useColorScheme() === "light" ? Colors.light.border : Colors.dark.border;
 
-	const handleSearch = () => {
-		// filter chats when search term
+	const [search, setSearch] = useState<string>("");
+	let rowRefs = new Map();
+
+	const handleSearch = (searchTerm: string) => {
+		setSearch(searchTerm);
 	};
 
 	const handleClearSearch = () => {
-		// clear search term
+		setSearch("");
 	};
 
 	const handleFocus = () => {
@@ -54,61 +65,125 @@ export default function HomeScreen() {
 	const textColor =
 		useColorScheme() === "light" ? Colors.light.text : Colors.dark.text;
 
-	const searchIconColor =
+	const iconColor =
 		useColorScheme() === "light" ? Colors.light.icon : Colors.dark.icon;
 
-	const [search, setSearch] = useState("");
+	const swipeableBg =
+		useColorScheme() === "light"
+			? Colors.light.secondaryColor
+			: Colors.dark.secondaryColor;
+
+	const renderActions = (dragX: any) => {
+		const scale = dragX.interpolate({
+			inputRange: [-3000, -80, 0],
+			outputRange: [2, 1, 0],
+			extrapolate: "clamp",
+		});
+		// const closeSwipeable = () => {
+		// 	swipeableRef.current?.reset();
+		// };
+
+		return (
+			<TouchableOpacity
+				activeOpacity={0.8}
+				// onPress={() => closeSwipeable}
+				style={styles.actionContainer}
+			>
+				<Animated.View
+					style={[
+						{
+							transform: [{ scale }],
+							justifyContent: "center",
+							alignItems: "center",
+							backgroundColor: swipeableBg,
+							width: 80,
+							height: 80,
+						},
+					]}
+				>
+					<Ionicons
+						style={{ color: textColor }}
+						size={28}
+						name="ellipsis-horizontal-outline"
+					/>
+					<ThemedText type="default">More</ThemedText>
+				</Animated.View>
+			</TouchableOpacity>
+		);
+	};
 
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
-			<View style={styles.titleContainer}>
-				<ThemedText type="title">Chats</ThemedText>
-			</View>
-			<SearchBar
-				platform="ios"
-				placeholder="Type Here..."
-				onChangeText={handleSearch}
-				value={search}
-				containerStyle={{ backgroundColor: "transparent" }}
-				inputContainerStyle={{ backgroundColor: searchBgColor }}
-				inputStyle={{ color: textColor }}
-				placeholderTextColor={searchIconColor}
-				searchIcon={{ name: "search" }}
-				clearIcon={{ name: "close" }}
-				onChange={() => setSearch}
-				onFocus={handleFocus}
-				onBlur={handleBlur}
-				onClear={handleClearSearch}
-				loadingProps={{
-					color: searchIconColor,
-				}}
-				showLoading={false}
-				onCancel={() => {}}
-				lightTheme={false}
-				round={false}
-				cancelButtonTitle={"Cancel"}
-				cancelButtonProps={{ color: searchIconColor }}
-				showCancel
-			/>
-			<ScrollView style={{ marginTop: 10 }}>
-				{chats.map((chat) => (
-					<View
-						style={[styles.chatContainer, { borderBottomColor: border }]}
-						key={chat.id}
-					>
-						<View
-							style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
-						>
-							<Image
-								style={{ width: 50, height: 50, borderRadius: 25 }}
-								source={{ uri: chat.image }}
-							/>
-							<ThemedText type="defaultSemiBold">{chat.name}</ThemedText>
-						</View>
-						<Button title="..." onPress={() => {}} />
+			<TouchableWithoutFeedback>
+				<View style={{ flex: 1 }}>
+					<View style={styles.titleContainer}>
+						<ThemedText type="title">Chats</ThemedText>
 					</View>
-				))}
-			</ScrollView>
+					<SearchBar
+						round
+						onCancel={handleClearSearch}
+						platform="ios"
+						placeholder="Type Here..."
+						onChangeText={() => handleSearch}
+						value={search}
+						containerStyle={{ backgroundColor: "transparent" }}
+						inputContainerStyle={{ backgroundColor: searchBgColor }}
+						inputStyle={{ color: textColor }}
+						placeholderTextColor={iconColor}
+						searchIcon={{ name: "search" }}
+						clearIcon={{ name: "close" }}
+						onFocus={handleFocus}
+						onBlur={handleBlur}
+						onClear={handleClearSearch}
+						loadingProps={{
+							color: iconColor,
+						}}
+						showLoading={false}
+						lightTheme={false}
+						cancelButtonTitle={"Cancel"}
+						cancelButtonProps={{ color: iconColor }}
+						showCancel
+					/>
+					<ScrollView style={{ marginTop: 10 }}>
+						{chats.map((chat) => (
+							<Swipeable
+								friction={1}
+								key={chat.id}
+								ref={(ref) => {
+									if (ref && !rowRefs.get(chat.id)) {
+										rowRefs.set(chat.id, ref);
+									}
+								}}
+								renderRightActions={(progress, dragX) => renderActions(dragX)}
+								// close open swiables when opening new one
+								onSwipeableWillOpen={() => {
+									[...rowRefs.entries()].forEach(([key, ref]) => {
+										if (key !== chat.id && ref) ref.close();
+									});
+								}}
+							>
+								<View
+									style={[styles.chatContainer, { borderBottomColor: border }]}
+								>
+									<View
+										style={{
+											flexDirection: "row",
+											gap: 10,
+											alignItems: "center",
+										}}
+									>
+										<Image
+											style={{ width: 50, height: 50, borderRadius: 25 }}
+											source={{ uri: chat.image }}
+										/>
+										<ThemedText type="defaultSemiBold">{chat.name}</ThemedText>
+									</View>
+								</View>
+							</Swipeable>
+						))}
+					</ScrollView>
+				</View>
+			</TouchableWithoutFeedback>
 		</SafeAreaView>
 	);
 }
@@ -123,9 +198,14 @@ const styles = StyleSheet.create({
 	chatContainer: {
 		flexDirection: "row",
 		alignItems: "center",
+
 		justifyContent: "space-between",
 		padding: 10,
-
 		borderBottomWidth: 0.5,
+	},
+	actionContainer: {
+		justifyContent: "center",
+		alignItems: "center",
+		width: 80,
 	},
 });
