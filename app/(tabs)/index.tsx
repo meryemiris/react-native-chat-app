@@ -8,6 +8,7 @@ import {
 	useColorScheme,
 	Animated,
 	TouchableWithoutFeedback,
+	Text,
 } from "react-native";
 import { SearchBar } from "react-native-elements";
 import { ThemedText } from "@/components/ThemedText";
@@ -22,7 +23,7 @@ interface Chat {
 	image: string;
 }
 
-const chats: Chat[] = [
+const chatsList: Chat[] = [
 	{ id: 1, name: "Chat 1", image: "https://picsum.photos/200/300" },
 	{ id: 2, name: "Chat 2", image: "https://picsum.photos/200/300" },
 	{ id: 3, name: "Chat 3", image: "https://picsum.photos/200/300" },
@@ -36,11 +37,10 @@ const chats: Chat[] = [
 ];
 
 export default function HomeScreen() {
-	const border =
-		useColorScheme() === "light" ? Colors.light.border : Colors.dark.border;
-
+	const [chats, setChats] = useState<Chat[]>(chatsList);
 	const [search, setSearch] = useState<string>("");
-	let rowRefs = new Map();
+
+	const rowRefs = new Map<number, Swipeable>();
 
 	const handleSearch = (searchTerm: string) => {
 		setSearch(searchTerm);
@@ -58,6 +58,13 @@ export default function HomeScreen() {
 		// handle search bar blur
 	};
 
+	const handleDeleteChat = (chatId: number) => {
+		setChats(chats.filter((chat) => chat.id !== chatId));
+	};
+
+	const border =
+		useColorScheme() === "light" ? Colors.light.border : Colors.dark.border;
+
 	const searchBgColor =
 		useColorScheme() === "light"
 			? Colors.light.secondaryColor
@@ -73,42 +80,57 @@ export default function HomeScreen() {
 			? Colors.light.secondaryColor
 			: Colors.dark.secondaryColor;
 
-	const renderActions = (dragX: any) => {
-		const scale = dragX.interpolate({
-			inputRange: [-3000, -80, 0],
-			outputRange: [2, 1, 0],
+	const renderActions = (dragX: Animated.Value, chatId: number) => {
+		const opacityMore = dragX.interpolate({
+			inputRange: [-100, -60],
+			outputRange: [1, 0],
 			extrapolate: "clamp",
 		});
-		// const closeSwipeable = () => {
-		// 	swipeableRef.current?.reset();
-		// };
+
+		const widthDelete = dragX.interpolate({
+			inputRange: [-100, 0],
+			outputRange: [100, 100],
+			extrapolate: "clamp",
+		});
 
 		return (
-			<TouchableOpacity
-				activeOpacity={0.8}
-				// onPress={() => closeSwipeable}
-				style={styles.actionContainer}
-			>
+			<View style={styles.actionsContainer}>
 				<Animated.View
 					style={[
+						styles.moreButton,
 						{
-							transform: [{ scale }],
-							justifyContent: "center",
-							alignItems: "center",
+							opacity: opacityMore,
 							backgroundColor: swipeableBg,
-							width: 80,
-							height: 80,
 						},
 					]}
 				>
-					<Ionicons
-						style={{ color: textColor }}
-						size={28}
-						name="ellipsis-horizontal-outline"
-					/>
-					<ThemedText type="default">More</ThemedText>
+					<TouchableOpacity style={styles.moreContent}>
+						<Ionicons
+							style={{ color: textColor }}
+							size={28}
+							name="ellipsis-horizontal-outline"
+						/>
+						<Text style={styles.moreText}>More</Text>
+					</TouchableOpacity>
 				</Animated.View>
-			</TouchableOpacity>
+				<Animated.View
+					style={[
+						styles.deleteButton,
+						{
+							opacity: widthDelete,
+							backgroundColor: "red",
+						},
+					]}
+				>
+					<TouchableOpacity
+						onPress={() => handleDeleteChat(chatId)}
+						style={styles.deleteContent}
+					>
+						<Ionicons name="trash-outline" size={28} color="white" />
+						<Text style={styles.deleteText}>Delete</Text>
+					</TouchableOpacity>
+				</Animated.View>
+			</View>
 		);
 	};
 
@@ -135,9 +157,7 @@ export default function HomeScreen() {
 						onFocus={handleFocus}
 						onBlur={handleBlur}
 						onClear={handleClearSearch}
-						loadingProps={{
-							color: iconColor,
-						}}
+						loadingProps={{ color: iconColor }}
 						showLoading={false}
 						lightTheme={false}
 						cancelButtonTitle={"Cancel"}
@@ -147,20 +167,21 @@ export default function HomeScreen() {
 					<ScrollView style={{ marginTop: 10 }}>
 						{chats.map((chat) => (
 							<Swipeable
-								friction={1}
 								key={chat.id}
 								ref={(ref) => {
 									if (ref && !rowRefs.get(chat.id)) {
 										rowRefs.set(chat.id, ref);
 									}
 								}}
-								renderRightActions={(progress, dragX) => renderActions(dragX)}
-								// close open swiables when opening new one
+								renderRightActions={(progress, dragX) =>
+									renderActions(dragX, chat.id)
+								}
 								onSwipeableWillOpen={() => {
 									[...rowRefs.entries()].forEach(([key, ref]) => {
 										if (key !== chat.id && ref) ref.close();
 									});
 								}}
+								rightThreshold={80} // Adjust swipe threshold to activate the button
 							>
 								<View
 									style={[styles.chatContainer, { borderBottomColor: border }]}
@@ -170,6 +191,7 @@ export default function HomeScreen() {
 											flexDirection: "row",
 											gap: 10,
 											alignItems: "center",
+											flex: 1,
 										}}
 									>
 										<Image
@@ -198,14 +220,46 @@ const styles = StyleSheet.create({
 	chatContainer: {
 		flexDirection: "row",
 		alignItems: "center",
-
 		justifyContent: "space-between",
 		padding: 10,
 		borderBottomWidth: 0.5,
 	},
-	actionContainer: {
+	actionsContainer: {
+		flexDirection: "row",
+		height: "100%",
+	},
+	moreButton: {
 		justifyContent: "center",
 		alignItems: "center",
+		height: "100%",
 		width: 80,
+	},
+	moreContent: {
+		alignItems: "center",
+		justifyContent: "center",
+		width: "100%",
+		height: "100%",
+	},
+	moreText: {
+		color: "white",
+		marginLeft: 10,
+		fontSize: 16,
+	},
+	deleteButton: {
+		justifyContent: "center",
+		alignItems: "center",
+		height: "100%",
+		width: 80,
+	},
+	deleteContent: {
+		alignItems: "center",
+		justifyContent: "center",
+		width: "100%",
+		height: "100%",
+	},
+	deleteText: {
+		color: "white",
+		marginLeft: 10,
+		fontSize: 16,
 	},
 });
